@@ -1,0 +1,65 @@
+import api from '@middlewares/api';
+import CommentBox from './commentBox';
+import CommentCard from './commentCard';
+import { useEffect, useState } from 'react';
+import useGetComments from '@servers/useGetComments';
+import useGetNotifications from '@servers/useGetNotifications';
+import { WatchComments, WatchCommentsCards, WatchCommentsTitle } from '../watch.styled';
+
+export default function WatchCommentsComp({ vId, user }) {
+  const { data, refetch } = useGetComments(vId, { enabled: !!vId });
+  const { refetch: refetchNotifications } = useGetNotifications();
+  const [newComment, setNewComment] = useState('');
+  const [disable, setDisable] = useState(true);
+
+  function countComments(comments = []) {
+    let count = comments?.length;
+    comments?.forEach(item => {
+      if (item?.replies?.length) {
+        count += item?.replies?.length;
+      }
+    });
+    return count;
+  }
+
+  function reverseData(data) {
+    return [...data].reverse();
+  }
+
+  async function postComment() {
+    setDisable(true);
+    await api.post(`/videos/${vId}/comments`, { content: newComment });
+    setDisable(false);
+    setNewComment('');
+    refetch();
+    refetchNotifications();
+  }
+
+  useEffect(() => {
+    if (newComment) setDisable(false);
+    else setDisable(true);
+  }, [newComment]);
+
+  return (
+    <WatchComments>
+      <WatchCommentsTitle>{countComments(data?.data)} Comments</WatchCommentsTitle>
+      <WatchCommentsCards>
+        <CommentBox
+          name='Comment'
+          disable={disable}
+          handler={postComment}
+          setter={setNewComment}
+          user={user}
+          value={newComment}
+        />
+        {data?.data?.map(one => (
+          <CommentCard key={one?._id} data={one?.main} refetch={refetch} vId={vId} replyId={one?._id}>
+            {reverseData(one?.replies).map(two => (
+              <CommentCard reply key={two?._id} data={two} refetch={refetch} vId={vId} />
+            ))}
+          </CommentCard>
+        ))}
+      </WatchCommentsCards>
+    </WatchComments>
+  );
+}
