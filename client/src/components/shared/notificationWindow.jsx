@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import NotificationCard from './notificationCard';
 import useGetNotifications from '@servers/useGetNotifications';
-import { NotificationWindowContainer, NotificationWindowIcon } from './noficationWindow.styled';
-import { NotificationWindowPopup, NotificationWindowPopupTitle } from './noficationWindow.styled';
+import { NotificationWindowContainer, NotificationWindowIcon } from './notificationWindow.styled';
+import { NotificationWindowPopup, NotificationWindowPopupTitle } from './notificationWindow.styled';
 
 export default function NoficationWindow() {
   const { pathname } = useLocation();

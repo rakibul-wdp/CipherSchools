@@ -1,7 +1,7 @@
 import Logo from './logo';
 import Searchbox from './searchbox';
 import UserWindow from './userWindow';
-import NoficationWindow from './noficationWindow';
+import NoficationWindow from './notificationWindow';
 import { HeaderContainer, HeaderContent, HeaderLeft, HeaderMiddle, HeaderRight } from './header.styled';
 
 export default function Header() {
