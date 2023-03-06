@@ -143,3 +143,34 @@ exports.dislikeComment = async (vId, cId, uId) => {
   return result;
 };
 
+exports.replyComment = async (vId, cId, uId, data) => {
+  const user = await users.findById(uId);
+  const video = await videos.findById(vId);
+  const comment = await comments.findById(cId).populate([
+    {
+      path: 'main',
+      model: 'baseComments',
+      populate: {
+        path: 'user',
+        model: 'users',
+        select: '-password -auth',
+      },
+    },
+  ]);
+  const replied = await baseComments.create({
+    user,
+    content: data?.content,
+  });
+  const result = await comments.updateOne(
+    { _id: cId },
+    {
+      $push: { replies: replied },
+    }
+  );
+  await notifications.create({
+    title: `${user.name} replied to your comment: ${comment.main.content}`,
+    video,
+    receiver: comment.main.user,
+  });
+  return result;
+};
