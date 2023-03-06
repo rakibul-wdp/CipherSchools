@@ -27,3 +27,11 @@ exports.signin = async data => {
   return { token, user: newUser };
 };
 
+exports.signout = async id => {
+  const result = await users.updateOne(
+    { _id: id },
+    { auth: { loggedIn: false, token: '', updatedAt: new Date().toISOString() } }
+  );
+  if (!result.modifiedCount) throw new Error('No users found to signout');
+  return { loggedIn: false };
+};
