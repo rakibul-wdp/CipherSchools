@@ -12,3 +12,18 @@ exports.signup = async data => {
   return await users.create({ ...data, username: data.email.split('@')[0].toLowerCase() });
 };
 
+exports.signin = async data => {
+  if (!data?.email) throw new Error('Please provide an email address');
+  if (!data?.password) throw new Error('Please provide a password');
+
+  const user = await users.findOne({ email: data?.email });
+  if (!user) throw new Error('No registered user is found with this email');
+  if (!bcrypt.compareSync(data?.password, user?.password)) throw new Error('Password is not matched');
+  const temp = { _id: user?._id, name: user?.name, email: user?.email, role: user?.role };
+  const token = jwt.sign(temp, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+  await users.updateOne({ _id: user?._id }, { auth: { loggedIn: true, token, updatedAt: new Date().toISOString() } });
+  const newUser = { _id: user._id, name: user.name, email: user.email, username: user.username, role: user.role };
+  return { token, user: newUser };
+};
+
