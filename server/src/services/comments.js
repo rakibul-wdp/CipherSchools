@@ -73,3 +73,38 @@ exports.getComments = async (vId, query) => {
   };
 };
 
+exports.likeComment = async (vId, cId, uId) => {
+  const user = await users.findById(uId);
+  const video = await videos.findById(vId);
+  const comment = await baseComments.findById(cId);
+  if (!comment) throw new Error('No comment is found with this id');
+  let result = {};
+  await baseComments.updateOne(
+    { _id: cId },
+    {
+      $pull: { dislikes: uId },
+    }
+  );
+  if (comment.likes.includes(uId)) {
+    result = await baseComments.updateOne(
+      { _id: cId },
+      {
+        $pull: { likes: uId },
+      }
+    );
+  } else {
+    result = await baseComments.updateOne(
+      { _id: cId },
+      {
+        $push: { likes: user },
+      }
+    );
+    await notifications.create({
+      title: `${user.name} likes your comment: ${comment.content}`,
+      video,
+      receiver: comment.user,
+    });
+  }
+  return result;
+};
+
