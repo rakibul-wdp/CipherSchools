@@ -108,3 +108,38 @@ exports.likeComment = async (vId, cId, uId) => {
   return result;
 };
 
+exports.dislikeComment = async (vId, cId, uId) => {
+  const user = await users.findById(uId);
+  const video = await videos.findById(vId);
+  const comment = await baseComments.findById(cId);
+  if (!comment) throw new Error('No comment is found with this id');
+  let result = {};
+  await baseComments.updateOne(
+    { _id: cId },
+    {
+      $pull: { likes: uId },
+    }
+  );
+  if (comment.dislikes.includes(uId)) {
+    result = await baseComments.updateOne(
+      { _id: cId },
+      {
+        $pull: { dislikes: uId },
+      }
+    );
+  } else {
+    result = await baseComments.updateOne(
+      { _id: cId },
+      {
+        $push: { dislikes: user },
+      }
+    );
+    await notifications.create({
+      title: `${user.name} dislikes your comment: ${comment.content}`,
+      video,
+      receiver: comment.user,
+    });
+  }
+  return result;
+};
+
