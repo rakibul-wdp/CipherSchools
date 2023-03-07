@@ -81,3 +81,37 @@ exports.likeVideo = async (vId, uId) => {
   return result;
 };
 
+exports.dislikeVideo = async (vId, uId) => {
+  const user = await users.findById(uId).select('-password -auth -__v');
+  const video = await videos.findById(vId);
+  if (!video) throw new Error('No video is found with this id');
+  let result = {};
+  await videos.updateOne(
+    { _id: vId },
+    {
+      $pull: { likes: uId },
+    }
+  );
+  if (video.dislikes.includes(uId)) {
+    result = await videos.updateOne(
+      { _id: vId },
+      {
+        $pull: { dislikes: uId },
+      }
+    );
+  } else {
+    result = await videos.updateOne(
+      { _id: vId },
+      {
+        $push: { dislikes: user },
+      }
+    );
+    await notifications.create({
+      title: `${user.name} dislikes your video: ${video.title}`,
+      video,
+      receiver: video.creator,
+    });
+  }
+  return result;
+};
+
