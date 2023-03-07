@@ -20,7 +20,6 @@ exports.postVideos = async (vId, data) => {
   return (await videos.create(revised)).depopulate('creator');
 };
 
-
 exports.getVideos = async query => {
   const temps = {
     page: Number(query?.page) - 1,
@@ -45,6 +44,40 @@ exports.getVideo = async (vId, query) => {
   const result = await videos.findById(vId).select(fields).populate('creator', '-password -auth -__v');
   if (!result) throw new Error('No video is found with this id');
   await videos.updateOne({ _id: result._id }, { $inc: { views: 1 } });
+  return result;
+};
+
+exports.likeVideo = async (vId, uId) => {
+  const user = await users.findById(uId).select('-password -auth -__v');
+  const video = await videos.findById(vId);
+  if (!video) throw new Error('No video is found with this id');
+  let result = {};
+  await videos.updateOne(
+    { _id: vId },
+    {
+      $pull: { dislikes: uId },
+    }
+  );
+  if (video.likes.includes(uId)) {
+    result = await videos.updateOne(
+      { _id: vId },
+      {
+        $pull: { likes: uId },
+      }
+    );
+  } else {
+    result = await videos.updateOne(
+      { _id: vId },
+      {
+        $push: { likes: user },
+      }
+    );
+    await notifications.create({
+      title: `${user.name} likes your video: ${video.title}`,
+      video,
+      receiver: video.creator,
+    });
+  }
   return result;
 };
 
