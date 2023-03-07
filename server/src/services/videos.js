@@ -115,3 +115,20 @@ exports.dislikeVideo = async (vId, uId) => {
   return result;
 };
 
+exports.shareVideo = async (vId, uId) => {
+  const video = await videos.findById(vId);
+  const user = await users.findById(uId);
+  const result = await videos.updateOne(
+    { _id: vId },
+    {
+      $inc: { shares: 1 },
+    }
+  );
+  if (!result.modifiedCount) throw new Error('No video is found with this id');
+  await notifications.create({
+    title: `${user.name} shares your video: ${video.title}`,
+    video,
+    receiver: video.creator,
+  });
+  return result;
+};
