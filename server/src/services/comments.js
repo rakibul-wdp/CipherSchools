@@ -35,3 +35,41 @@ exports.postComments = async (vId, uId, data) => {
   return result;
 };
 
+exports.getComments = async (vId, query) => {
+  const temps = {
+    page: Number(query?.page) - 1,
+    limit: Number(query?.limit),
+    fields: query?.fields?.replaceAll(/[, ]/g, ' '),
+  };
+  const result = await comments
+    .find({ ...query?.filter, video: vId })
+    .sort(query?.sort)
+    .select(temps.fields)
+    .populate([
+      {
+        path: 'main',
+        model: 'baseComments',
+        populate: {
+          path: 'user',
+          model: 'users',
+          select: '-password -auth',
+        },
+      },
+      {
+        path: 'replies',
+        model: 'baseComments',
+        populate: {
+          path: 'user',
+          model: 'users',
+          select: '-password -auth',
+        },
+      },
+    ]);
+  if (!result?.length) throw new Error('No comments found with these queries');
+  return {
+    totalItems: result?.length,
+    totalPages: Math.ceil(result?.length / (temps?.limit || result?.length)),
+    data: result,
+  };
+};
+
